@@ -1,54 +1,68 @@
-require('dotenv').config();
+// backend/index.js
+
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
+
+const path = require('path');
+
+// Make the uploads folder public
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+
+// 1. Enable CORS (Cross-Origin Resource Sharing)
+// This allows your React frontend (on port 3000) to access this API
 app.use(cors());
+
+// 2. Body Parser
+// Allows the server to read JSON data sent from your Admin Dashboard forms
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// MongoDB Model
-const contactSchema = new mongoose.Schema({
-  name: String, email: String, company: String, service: String, message: String
-}, { timestamps: true });
-const Contact = mongoose.model('Contact', contactSchema);
+// ============================================================
+// DATABASE CONNECTION
+// ============================================================
 
-// Contact Route
-app.post('/api/contact', async (req, res) => {
-  try {
-    const { name, email, company, service, message } = req.body;
-    if (!name || !email || !message) return res.status(400).json({ error: 'Name, email, and message are required.' });
+// Replace the string below with your MongoDB Compass connection string if not using .env
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/rws_database';
 
-    await Contact.create({ name, email, company, service, message });
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log('✅ MongoDB Connected Successfully');
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB Connection Error:', err.message);
+  });
 
-    // Optional: send email notification
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-      });
-      await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: 'sales@robotweldingservices.com',
-        subject: `New RWS Inquiry from ${name}`,
-        html: `<h3>New Contact Form Submission</h3>
-               <p><b>Name:</b> ${name}</p><p><b>Email:</b> ${email}</p>
-               <p><b>Company:</b> ${company}</p><p><b>Service:</b> ${service}</p>
-               <p><b>Message:</b> ${message}</p>`
-      });
-    }
+// ============================================================
+// ROUTES
+// ============================================================
 
-    res.json({ success: true, message: 'Message received! We\'ll get back to you same-day.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error. Please try again.' });
-  }
+// Import your Admin Routes
+const adminRoutes = require('./routes/adminRoutes');
+
+// Link the routes to the /api/admin path
+// This makes endpoints available at http://localhost:5000/api/admin/...
+app.use('/api/admin', adminRoutes);
+
+// Health Check Route (To verify the server is alive)
+app.get('/', (req, res) => {
+  res.send('RWS Backend API is running...');
 });
 
-app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
+// ============================================================
+// SERVER STARTUP
+// ============================================================
 
 const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/rws')
-  .then(() => app.listen(PORT, () => console.log(`RWS Server running on port ${PORT}`)))
-  .catch(err => { console.error('DB connection failed:', err); process.exit(1); });
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server is floating at http://localhost:${PORT}`);
+  console.log(`📡 Admin API ready at http://localhost:${PORT}/api/admin/all-content`);
+});
