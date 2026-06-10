@@ -1,68 +1,34 @@
-// backend/index.js
-
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
+const express=require('express');
+const mongoose=require('mongoose');
+const cors=require('cors');
+const multer=require('multer');
+const path=require('path');
 require('dotenv').config();
 
-const app = express();
-
-const path = require('path');
-
-// Make the uploads folder public
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ============================================================
-// MIDDLEWARE
-// ============================================================
-
-// 1. Enable CORS (Cross-Origin Resource Sharing)
-// This allows your React frontend (on port 3000) to access this API
+const app=express();
+app.use('/uploads',express.static(path.join(__dirname,'uploads')));
 app.use(cors());
-
-// 2. Body Parser
-// Allows the server to read JSON data sent from your Admin Dashboard forms
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended:true}));
 
-// ============================================================
-// DATABASE CONNECTION
-// ============================================================
+mongoose.connect(process.env.MONGO_URI||'mongodb://localhost:27017/rws_database')
+  .then(()=>console.log('✅ MongoDB Connected'))
+  .catch(err=>console.error('❌ MongoDB Error:',err.message));
 
-// Replace the string below with your MongoDB Compass connection string if not using .env
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/rws_database';
+app.use('/api/admin',require('./routes/adminRoutes'));
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB Connected Successfully');
-  })
-  .catch((err) => {
-    console.error('❌ MongoDB Connection Error:', err.message);
-  });
-
-// ============================================================
-// ROUTES
-// ============================================================
-
-// Import your Admin Routes
-const adminRoutes = require('./routes/adminRoutes');
-
-// Link the routes to the /api/admin path
-// This makes endpoints available at http://localhost:5000/api/admin/...
-app.use('/api/admin', adminRoutes);
-
-// Health Check Route (To verify the server is alive)
-app.get('/', (req, res) => {
-  res.send('RWS Backend API is running...');
+// Contact form
+const upload=multer({dest:'./uploads/'});
+const Contact=require('./models/Contact');
+app.post('/api/contact',upload.array('quoteFiles',5),async(req,res)=>{
+  try{
+    const{name,email,company,service,message}=req.body;
+    await new Contact({name,email,company,service,message,files:req.files?.map(f=>f.filename)||[]}).save();
+    res.json({success:true});
+  }catch(err){res.status(500).json({success:false,error:err.message});}
 });
 
-// ============================================================
-// SERVER STARTUP
-// ============================================================
+app.get('/',(req,res)=>res.send('RWS API running'));
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`🚀 Server is floating at http://localhost:${PORT}`);
-  console.log(`📡 Admin API ready at http://localhost:${PORT}/api/admin/all-content`);
-});
+const PORT=process.env.PORT||5000;
+app.listen(PORT,()=>console.log(`🚀 Server on http://localhost:${PORT}`));
