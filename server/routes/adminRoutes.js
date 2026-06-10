@@ -26,9 +26,9 @@ router.get('/all-content',async(req,res)=>{
 });
 
 router.post('/services',async(req,res)=>{
-  const{id,title,icon,desc}=req.body;
-  if(id)await Service.findByIdAndUpdate(id,{title,icon,desc});
-  else await new Service({title,icon,desc,order:0}).save();
+  const{id,title,icon,desc,detail}=req.body;
+  if(id)await Service.findByIdAndUpdate(id,{title,icon,desc,detail});
+  else await new Service({title,icon,desc,detail,order:0}).save();
   res.json({success:true});
 });
 

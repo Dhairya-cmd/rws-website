@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const serviceSchema = new mongoose.Schema({
   title: String,
-  icon: String, // e.g., 'IconRoboticArm'
+  icon: String,
   desc: String,
   detail: String,
   order: Number
