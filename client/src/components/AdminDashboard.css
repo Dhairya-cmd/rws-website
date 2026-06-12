@@ -123,6 +123,47 @@ backdrop-filter:blur(32px) saturate(180%);
   overflow:visible;
 }
 
+.adm-confirm-overlay{
+  position:fixed;inset:0;z-index:999999999;
+  background:rgba(4,10,16,.75);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  padding:1rem;
+  animation:fadeUp .2s ease both;
+}
+.adm-confirm-modal{
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.06));
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:20px;
+  padding:2rem 2rem 1.75rem;
+  width:min(420px,100%);
+  text-align:center;
+  backdrop-filter:blur(24px) saturate(160%);
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
+  animation:fadeUp .25s ease both;
+}
+.adm-confirm-icon{
+  font-size:2rem;margin-bottom:.75rem;
+  display:flex;align-items:center;justify-content:center;
+  width:52px;height:52px;margin:0 auto .9rem;
+  background:rgba(200,16,46,.14);
+  border:1px solid rgba(200,16,46,.28);
+  border-radius:50%;color:#FF4D63;
+}
+.adm-confirm-title{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:1.15rem;font-weight:700;
+  color:#fff;margin-bottom:.5rem;letter-spacing:-.2px;
+}
+.adm-confirm-msg{
+  font-size:.88rem;color:var(--text2);
+  line-height:1.6;margin-bottom:1.5rem;
+}
+.adm-confirm-actions{
+  display:flex;gap:.75rem;justify-content:center;
+}
+.adm-confirm-actions .adm-btn{min-width:110px}
+
 .adm-side-top{
   display:flex;
   align-items:center;
@@ -1026,54 +1067,322 @@ backdrop-filter:blur(32px) saturate(180%);
   to{opacity:1;transform:translateY(0)}
 }
 
-@media(max-width:980px){
-  .adm-body{padding:1.5rem}
-  .adm-fields-grid,.adm-grid-2,.adm-grid-4,.adm-page-card__body{grid-template-columns:1fr}
-  .adm-field-full{grid-column:1}
-  .adm-page-editor .adm-card{width:min(760px,100%)}
+/* ── 980px: iPad Pro, Surface Pro, landscape tablets ── */
+@media (max-width: 980px) {
+
+  /* Services: 3-col → 2-col */
+  .services__grid,
+  .services__grid--wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  /* About: reduce the huge 4.75rem column gap */
+  .about__inner {
+    column-gap: 2.5rem;
+  }
+
+  /* About: if still 2-col, reduce font sizes */
+  .feature-panel h3 {
+    font-size: 1.2rem;
+  }
+
+  .about__title {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  }
+
+  /* feature-split (About page inner split) → stack */
+  .feature-split {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  /* Industries inner: 2-col → 1-col */
+  .industries__inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  /* Industries layout: keep 2-col but tighten gap */
+  .industries-layout {
+    gap: 1rem;
+  }
+
+  /* Contact: 2-col → 1-col */
+  .contact__inner {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  /* contact info h2 — remove 11ch clamp */
+  .contact__info h2 {
+    max-width: none;
+  }
+
+  /* Page inner: reduce horizontal padding */
+  .page__inner {
+    padding: 4rem 2rem 5rem;
+  }
+
+  .page--bg .page__inner {
+    padding: 4.5rem 2rem 5.5rem;
+  }
+
+  /* Why grid: stays 2-col but reduce padding */
+  .why-card {
+    padding: 1.75rem;
+  }
+
+  /* Service card: reduce padding slightly */
+  .service-card {
+    padding: 1.75rem 1.5rem;
+  }
+
+  /* Section head subtitle: allow full width */
+  .section__head p {
+    max-width: 100%;
+  }
+
+  /* Gallery grid: tighten */
+  .gallery__grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
 }
-@media(max-width:860px){
-  .adm-side{width:64px}
-  .adm-logo,.adm-nav-label,.adm-subtabs,.adm-nav-section,.adm-logout-label{display:none}
-  .adm-nav-item{justify-content:center;padding:.7rem}
-  .adm-body{padding:1.25rem}
+/* ── TABLET: 860px ── */
+@media (max-width: 860px) {
+  .adm-side {
+    width: 60px;
+  }
+
+  .adm-logo,
+  .adm-nav-label,
+  .adm-subtabs,
+  .adm-nav-section,
+  .adm-logout-label {
+    display: none;
+  }
+
+  .adm-nav-item {
+    justify-content: center;
+    padding: 0.65rem;
+  }
+
+  .adm-body {
+    padding: 1.25rem;
+  }
+
+  .adm-fields-grid,
+  .adm-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-grid-4 {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .adm-field-full {
+    grid-column: 1 / -1;
+  }
+
+  .adm-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .adm-table th:nth-child(3),
+  .adm-table td:nth-child(3) {
+    display: none;
+  }
 }
-@media(max-width:640px){
-  .adm{
-    display:block;
-    position:fixed;
-    inset:0;
+
+/* ── MOBILE: 600px ── */
+@media (max-width: 600px) {
+  .adm {
+    flex-direction: column;
+    overflow-y: auto;
   }
-  .adm-side{
-    position:fixed;
-    left:0;
-    top:0;
-    bottom:0;
-    z-index:20;
+
+  /* Sidebar becomes a top bar */
+  .adm-side {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
-  .adm-main{
-    margin-left:64px;
+
+  .adm--collapsed .adm-side {
+    width: 100%;
   }
-  .adm-topbar{
-    padding:0 1rem;
+
+  .adm-side-top {
+    border-bottom: none;
+    border-right: 1px solid rgba(15, 23, 42, 0.07);
+    flex-shrink: 0;
+    padding: 0 0.75rem;
   }
-  .adm-body{
-    padding:1rem;
+
+  /* Show logo text on mobile top bar */
+  .adm-logo {
+    display: block;
+    font-size: 0.85rem;
   }
-  .adm-card{
-    padding:1rem;
+
+  .adm--collapsed .adm-logo {
+    display: block;
   }
-  .adm-topbar-left h1{
-    font-size:1rem;
+
+  /* Hide collapse toggle on mobile */
+  .adm-toggle {
+    display: none;
   }
-  .adm-topbar-left p{
-    font-size:.72rem;
+
+  .adm-nav {
+    display: flex;
+    flex-direction: row;
+    padding: 0 0.5rem;
+    gap: 0.15rem;
+    align-items: center;
+    overflow-x: auto;
+    flex: 1;
   }
-  .adm-custom-select__menu{
-    max-height:240px;
+
+  .adm-nav-item {
+    flex-direction: row;
+    padding: 0.55rem 0.75rem;
+    border-radius: 6px;
+    white-space: nowrap;
+    justify-content: flex-start;
+    flex-shrink: 0;
   }
-  .adm-inline-row{
-    flex-direction:column;
-    align-items:stretch;
+
+  .adm-nav-label {
+    display: inline;
+    font-size: 0.78rem;
+  }
+
+  .adm--collapsed .adm-nav-label {
+    display: inline;
+  }
+
+  .adm-subtabs {
+    display: none; /* handled by topbar sub on mobile */
+  }
+
+  .adm-side-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-top: none;
+    border-left: 1px solid rgba(15, 23, 42, 0.07);
+    padding: 0 0.6rem;
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .adm-logout-btn {
+    width: auto;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  .adm-logout-label {
+    display: none;
+  }
+
+  /* Main area takes remaining height */
+  .adm-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .adm-topbar {
+    padding: 0 1rem;
+    height: 52px;
+  }
+
+  .adm-topbar-left h1 {
+    font-size: 0.9rem;
+  }
+
+  .adm-topbar-left p {
+    display: none;
+  }
+
+  .adm-body {
+    padding: 1rem 0.9rem 2rem;
+  }
+
+  /* Cards */
+  .adm-card {
+    padding: 1.1rem;
+    border-radius: 10px;
+  }
+
+  /* Grid fixes */
+  .adm-grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .adm-fields-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Gallery grid */
+  .adm-gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  /* Table: hide order column too */
+  .adm-table th:nth-child(1),
+  .adm-table td:nth-child(1),
+  .adm-table th:nth-child(3),
+  .adm-table td:nth-child(3) {
+    display: none;
+  }
+
+  /* Queue row */
+  .adm-queue-row {
+    gap: 0.4rem;
+  }
+
+  .adm-q-item {
+    width: 76px;
+  }
+
+  .adm-q-frame {
+    width: 74px;
+    height: 52px;
+  }
+
+  /* Btn row wraps */
+  .adm-btn-row {
+    flex-wrap: wrap;
+  }
+
+  .adm-btn-row .adm-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+}
+
+/* ── SMALL MOBILE: 400px ── */
+@media (max-width: 400px) {
+  .adm-gallery-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .adm-card {
+    padding: 0.9rem;
+  }
+
+  .adm-body {
+    padding: 0.75rem 0.75rem 2rem;
   }
 }

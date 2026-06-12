@@ -29,10 +29,7 @@ export default function AdminLogin({ onLoginSuccess, onClose }) {
         body: JSON.stringify(creds),
       });
       const data = await res.json();
-      if (data.success) {
-        localStorage.setItem("adminToken", data.token);
-        onLoginSuccess();
-      } else setError(data.message || "Invalid credentials");
+      if (data.success) { localStorage.setItem('adminToken', data.token); onLoginSuccess(data.role); } else setError(data.message || "Invalid credentials");
     } catch {
       setError("Server error — is the backend running?");
     } finally {

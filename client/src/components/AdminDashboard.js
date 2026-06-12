@@ -4,6 +4,7 @@ import "./AdminDashboard.css";
 const API = "/api/admin";
 
 const NAV = [
+  { key: "devtools", label: "Dev Tools", icon: "🛡️" },
   { key: "home", label: "Home", icon: "🏠" },
   { key: "about", label: "About", icon: "ℹ️" },
   {
@@ -527,6 +528,7 @@ function PageEditor({ pageKey, data, onClose, onSave, onToast }) {
 }
 
 function ServicesManager({ services, sub, onSave, onToast }) {
+  const { confirm, modal } = useConfirm();
   const [form, setForm] = useState({ title: "", desc: "", detail: "" });
   const [editing, setEditing] = useState(null);
   const formRef = useRef(null);
@@ -549,7 +551,10 @@ function ServicesManager({ services, sub, onSave, onToast }) {
   };
 
   const del = async (id) => {
-    if (!window.confirm("Delete this service?")) return;
+    const ok = await confirm(
+      "This will permanently remove this service from your website.",
+    );
+    if (!ok) return;
     await fetch(`${API}/services/${id}`, { method: "DELETE" });
     await onSave();
     onToast("Service deleted", "ok");
@@ -573,6 +578,7 @@ function ServicesManager({ services, sub, onSave, onToast }) {
   if (sub === "Add / Edit") {
     return (
       <div className="adm-card" ref={formRef}>
+        {modal}
         <div className="adm-card-title">
           {editing ? "Editing: " + editing.title : "Add New Service"}
         </div>
@@ -637,6 +643,7 @@ function ServicesManager({ services, sub, onSave, onToast }) {
 
   return (
     <>
+      {modal}
       {editing && (
         <div className="adm-card adm-edit-inline" ref={formRef}>
           <div className="adm-card-title">Editing: {editing.title}</div>
@@ -920,7 +927,60 @@ function IndustriesManager({ industries, sub, onSave, onToast }) {
   );
 }
 
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div className="adm-confirm-overlay">
+      <div className="adm-confirm-modal">
+        <div className="adm-confirm-icon">⚠</div>
+        <h3 className="adm-confirm-title">Are you sure?</h3>
+        <p className="adm-confirm-msg">{message}</p>
+        <div className="adm-confirm-actions">
+          <button className="adm-btn adm-btn--ghost" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="adm-btn adm-btn--danger" onClick={onConfirm}>
+            Yes, Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function useConfirm() {
+  const [state, setState] = useState({
+    open: false,
+    message: "",
+    resolve: null,
+  });
+
+  const confirm = (message) =>
+    new Promise((resolve) => {
+      setState({ open: true, message, resolve });
+    });
+
+  const handleConfirm = () => {
+    state.resolve(true);
+    setState({ open: false, message: "", resolve: null });
+  };
+  const handleCancel = () => {
+    state.resolve(false);
+    setState({ open: false, message: "", resolve: null });
+  };
+
+  const modal = state.open ? (
+    <ConfirmModal
+      message={state.message}
+      onConfirm={handleConfirm}
+      onCancel={handleCancel}
+    />
+  ) : null;
+
+  return { confirm, modal };
+}
+
 function GalleryManager({ gallery, sub, onSave, onToast }) {
+  const { confirm, modal } = useConfirm();
   const [cat, setCat] = useState(CATS[0]);
   const [mtype, setMtype] = useState("image");
   const [files, setFiles] = useState([]);
@@ -946,7 +1006,10 @@ function GalleryManager({ gallery, sub, onSave, onToast }) {
   };
 
   const del = async (id) => {
-    if (!window.confirm("Delete this item?")) return;
+    const ok = await confirm(
+      "This will permanently remove the item from your gallery.",
+    );
+    if (!ok) return;
     await fetch(`${API}/gallery/${id}`, { method: "DELETE", headers: auth });
     await onSave();
     onToast("Item deleted", "ok");
@@ -957,99 +1020,172 @@ function GalleryManager({ gallery, sub, onSave, onToast }) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  const GalleryGrid = ({ items }) => (
+    <div className="adm-gallery-grid">
+      {items.map((item) => (
+        <div key={item._id} className="adm-gallery-item">
+          {item.type === "image" ? (
+            <img src={item.mediaUrl} alt={item.category} loading="lazy" />
+          ) : (
+            <video
+              src={item.mediaUrl}
+              muted
+              playsInline
+              preload="metadata"
+              onLoadedMetadata={(e) => {
+                e.target.currentTime = 1;
+              }}
+            />
+          )}
+          <div className="adm-gallery-overlay">
+            <span>{item.category}</span>
+            <button
+              type="button"
+              className="adm-btn adm-btn--danger adm-btn--sm"
+              onClick={() => del(item._id)}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   if (sub === "Upload New") {
-    const images = gallery.filter(i => i.type === 'image');
-const videos = gallery.filter(i => i.type === 'video');
-
-const GalleryGrid = ({ items }) => (
-  <div className="adm-gallery-grid">
-    {items.map((item) => (
-      <div key={item._id} className="adm-gallery-item">
-        {item.type === 'image' ? (
-          <img src={item.mediaUrl} alt={item.category} loading="lazy" />
-        ) : (
-          <video
-            src={item.mediaUrl}
-            muted
-            playsInline
-            preload="metadata"
-            onLoadedMetadata={e => { e.target.currentTime = 1; }}
-          />
-        )}
-        <div className="adm-gallery-overlay">
-          <span>{item.category}</span>
-          <button type="button" className="adm-btn adm-btn--danger adm-btn--sm" onClick={() => del(item._id)}>
-            Delete
-          </button>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
-return (
-  <div>
-    {gallery.length === 0 ? (
+    return (
       <div className="adm-card">
-        <div className="adm-empty">No media uploaded yet. Use "Upload New" to add photos and videos.</div>
-      </div>
-    ) : (
-      <>
-        <div className="adm-card">
-          <div className="adm-card-title">Photos ({images.length})</div>
-          {images.length === 0
-            ? <div className="adm-empty">No photos uploaded yet.</div>
-            : <GalleryGrid items={images} />
-          }
-        </div>
-        <div className="adm-card">
-          <div className="adm-card-title">Videos ({videos.length})</div>
-          {videos.length === 0
-            ? <div className="adm-empty">No videos uploaded yet.</div>
-            : <GalleryGrid items={videos} />
-          }
-        </div>
-      </>
-    )}
-  </div>
-);
-  }
+        {modal}
+        <div className="adm-card-title">Upload Media</div>
+        <form onSubmit={upload}>
+          <div className="adm-grid-4">
+            <div className="adm-group">
+              <CustomDropdown
+                label="Category"
+                value={cat}
+                options={CATS}
+                onChange={setCat}
+                placeholder="Select Category"
+              />
+            </div>
+            <div className="adm-group">
+              <CustomDropdown
+                label="Type"
+                value={mtype === "image" ? "Image" : "Video"}
+                options={["Image", "Video"]}
+                onChange={(v) => setMtype(v.toLowerCase())}
+                placeholder="Select Type"
+              />
+            </div>
+            <div className="adm-group">
+              <label className="adm-label">Files</label>
+              <label className="adm-file-label">
+                + Add Files
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  className="adm-file-input"
+                  onChange={(e) =>
+                    setFiles((p) => [...p, ...Array.from(e.target.files)])
+                  }
+                />
+              </label>
+            </div>
+            <div className="adm-group">
+              <label className="adm-label">&nbsp;</label>
+              <button
+                type="submit"
+                className="adm-btn"
+                disabled={uploading || !files.length}
+              >
+                {uploading ? "Uploading…" : "Upload"}
+              </button>
+            </div>
+          </div>
 
-  return (
-    <div className="adm-card">
-      <div className="adm-card-title">Gallery ({gallery.length} items)</div>
-      {gallery.length === 0 ? (
-        <div className="adm-empty">
-          No media uploaded yet. Use "Upload New" to add photos and videos.
-        </div>
-      ) : (
-        <div className="adm-gallery-grid">
-          {gallery.map((item) => (
-            <div key={item._id} className="adm-gallery-item">
-              {item.type === 'image' ? (
-  <img src={item.mediaUrl} alt={item.category} loading="lazy" />
-) : (
-  <video
-    src={item.mediaUrl}
-    muted
-    playsInline
-    preload="metadata"
-    onLoadedMetadata={e => { e.target.currentTime = 1; }}
-  />
-)}
-              <div className="adm-gallery-overlay">
-                <span>{item.category}</span>
+          {files.length > 0 && (
+            <div className="adm-queue">
+              <div className="adm-queue-header">
+                <span>{files.length} file(s) queued</span>
                 <button
                   type="button"
-                  className="adm-btn adm-btn--danger adm-btn--sm"
-                  onClick={() => del(item._id)}
+                  className="adm-btn adm-btn--ghost adm-btn--sm"
+                  onClick={clearFiles}
+                  disabled={files.length <= 1}
                 >
-                  Delete
+                  Clear All
                 </button>
               </div>
+              <div className="adm-queue-row">
+                {files.map((f, i) => (
+                  <div key={i} className="adm-q-item">
+                    <button
+                      type="button"
+                      className="adm-q-remove"
+                      onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                    >
+                      ✕
+                    </button>
+                    <div className="adm-q-frame">
+                      {f.type.startsWith("image") ? (
+                        <img src={URL.createObjectURL(f)} alt="" />
+                      ) : (
+                        <video
+                          src={URL.createObjectURL(f)}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          onLoadedMetadata={(e) => {
+                            e.target.currentTime = 1;
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div className="adm-q-name">{f.name}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+        </form>
+      </div>
+    );
+  }
+
+  // sub === "Uploaded"
+  const images = gallery.filter((i) => i.type === "image");
+  const videos = gallery.filter((i) => i.type === "video");
+
+  return (
+    <div>
+      {modal}
+      {gallery.length === 0 ? (
+        <div className="adm-card">
+          <div className="adm-empty">
+            No media uploaded yet. Use "Upload New" to add photos and videos.
+          </div>
         </div>
+      ) : (
+        <>
+          <div className="adm-card">
+            <div className="adm-card-title">Photos ({images.length})</div>
+            {images.length === 0 ? (
+              <div className="adm-empty">No photos uploaded yet.</div>
+            ) : (
+              <GalleryGrid items={images} />
+            )}
+          </div>
+          <div className="adm-card">
+            <div className="adm-card-title">Videos ({videos.length})</div>
+            {videos.length === 0 ? (
+              <div className="adm-empty">No videos uploaded yet.</div>
+            ) : (
+              <GalleryGrid items={videos} />
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -1076,7 +1212,129 @@ function ComingSoon() {
   );
 }
 
-export default function AdminDashboard({ onLogout }) {
+function DevTools({ onToast }) {
+  const [isDown, setIsDown] = useState(false);
+  const [msg, setMsg] = useState(
+    "This website is temporarily unavailable. Please check back soon.",
+  );
+  const [loading, setLoading] = useState(false);
+  const token = localStorage.getItem("adminToken");
+  const auth = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  useEffect(() => {
+    fetch("/api/admin/site-status")
+      .then((r) => r.json())
+      .then((d) => {
+        setIsDown(d.isShutdown);
+        if (d.message) setMsg(d.message);
+      });
+  }, []);
+
+  const shutdown = async () => {
+    setLoading(true);
+    await fetch("/api/admin/shutdown", {
+      method: "POST",
+      headers: auth,
+      body: JSON.stringify({ message: msg }),
+    });
+    setIsDown(true);
+    setLoading(false);
+    onToast("Site shut down.", "ok");
+  };
+
+  const restore = async () => {
+    setLoading(true);
+    await fetch("/api/admin/restore", { method: "POST", headers: auth });
+    setIsDown(false);
+    setLoading(false);
+    onToast("Site restored!", "ok");
+  };
+
+  return (
+    <div>
+      <div
+        className="adm-card"
+        style={{
+          borderColor: isDown ? "rgba(200,16,46,.5)" : "rgba(255,255,255,.12)",
+        }}
+      >
+        <div className="adm-card-title">Site Status</div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              flexShrink: 0,
+              background: isDown ? "#FF4D63" : "#34d399",
+              boxShadow: isDown
+                ? "0 0 12px rgba(200,16,46,.8)"
+                : "0 0 12px rgba(52,211,153,.8)",
+            }}
+          />
+          <span style={{ color: "#fff", fontWeight: 600, fontSize: ".95rem" }}>
+            {isDown ? "Site is currently OFFLINE" : "Site is currently LIVE"}
+          </span>
+        </div>
+        <div className="adm-group" style={{ marginBottom: "1.1rem" }}>
+          <label className="adm-label">
+            Shutdown Message (shown to visitors)
+          </label>
+          <textarea
+            className="adm-textarea"
+            value={msg}
+            onChange={(e) => setMsg(e.target.value)}
+            rows={3}
+            placeholder="Message shown to visitors when site is offline…"
+          />
+        </div>
+        <div className="adm-btn-row">
+          {!isDown ? (
+            <button
+              className="adm-btn adm-btn--danger"
+              onClick={shutdown}
+              disabled={loading}
+            >
+              {loading ? "Shutting down…" : "⏻ Shut Down Site"}
+            </button>
+          ) : (
+            <button className="adm-btn" onClick={restore} disabled={loading}>
+              {loading ? "Restoring…" : "↺ Restore Site"}
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="adm-card">
+        <div className="adm-card-title">Developer Info</div>
+        <div
+          style={{ fontSize: ".88rem", color: "var(--text2)", lineHeight: 1.8 }}
+        >
+          <p>
+            This panel is only visible to the{" "}
+            <strong style={{ color: "#FF4D63" }}>developer account</strong>.
+          </p>
+          <p style={{ marginTop: ".5rem" }}>
+            Shutting down the site replaces the entire frontend with a
+            maintenance screen for all visitors. The admin panel remains
+            accessible.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminDashboard({ onLogout, role }) {
   const [collapsed, setCollapsed] = useState(false);
   const [activePage, setActivePage] = useState("home");
   const [activeSub, setActiveSub] = useState("");
@@ -1120,6 +1378,12 @@ export default function AdminDashboard({ onLogout }) {
     : "";
 
   const renderBody = () => {
+    if (activePage === "devtools") {
+      if (role !== "developer")
+        return <div className="adm-empty">Access denied.</div>;
+      return <DevTools onToast={showToast} />;
+    }
+
     if (activePage === "services")
       return (
         <ServicesManager
@@ -1152,40 +1416,84 @@ export default function AdminDashboard({ onLogout }) {
       )}
 
       <aside
-  className="adm-side"
-  onMouseEnter={() => setCollapsed(false)}
-  onMouseLeave={() => setCollapsed(true)}
->
+        className="adm-side"
+        onMouseEnter={() => setCollapsed(false)}
+        onMouseLeave={() => setCollapsed(true)}
+      >
         <div className="adm-side-top">
           <span className="adm-logo">
-  {collapsed ? (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M18 3L4 9v9c0 7.5 5.8 14.5 14 16.5C26.2 32.5 32 25.5 32 18V9L18 3z"
-        fill="rgba(200,16,46,.18)" stroke="rgba(200,16,46,.7)" strokeWidth="1.5" strokeLinejoin="round"/>
-      <text x="18" y="22" textAnchor="middle" fill="#FF4D63"
-        style={{fontSize:'9px',fontFamily:'Space Grotesk, sans-serif',fontWeight:700,letterSpacing:'1px'}}>
-        RWS
-      </text>
-    </svg>
-  ) : (
-    <>
-      <svg width="28" height="28" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
-        <path d="M18 3L4 9v9c0 7.5 5.8 14.5 14 16.5C26.2 32.5 32 25.5 32 18V9L18 3z"
-          fill="rgba(200,16,46,.18)" stroke="rgba(200,16,46,.7)" strokeWidth="1.5" strokeLinejoin="round"/>
-        <text x="18" y="22" textAnchor="middle" fill="#FF4D63"
-          style={{fontSize:'9px',fontFamily:'Space Grotesk, sans-serif',fontWeight:700,letterSpacing:'1px'}}>
-          RWS
-        </text>
-      </svg>
-      RWS ADMIN
-    </>
-  )}
-</span>
-          
+            {collapsed ? (
+              <svg
+                width="36"
+                height="36"
+                viewBox="0 0 36 36"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M18 3L4 9v9c0 7.5 5.8 14.5 14 16.5C26.2 32.5 32 25.5 32 18V9L18 3z"
+                  fill="rgba(200,16,46,.18)"
+                  stroke="rgba(200,16,46,.7)"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <text
+                  x="18"
+                  y="22"
+                  textAnchor="middle"
+                  fill="#FF4D63"
+                  style={{
+                    fontSize: "9px",
+                    fontFamily: "Space Grotesk, sans-serif",
+                    fontWeight: 700,
+                    letterSpacing: "1px",
+                  }}
+                >
+                  RWS
+                </text>
+              </svg>
+            ) : (
+              <>
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 36 36"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  style={{ flexShrink: 0 }}
+                >
+                  <path
+                    d="M18 3L4 9v9c0 7.5 5.8 14.5 14 16.5C26.2 32.5 32 25.5 32 18V9L18 3z"
+                    fill="rgba(200,16,46,.18)"
+                    stroke="rgba(200,16,46,.7)"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <text
+                    x="18"
+                    y="22"
+                    textAnchor="middle"
+                    fill="#FF4D63"
+                    style={{
+                      fontSize: "9px",
+                      fontFamily: "Space Grotesk, sans-serif",
+                      fontWeight: 700,
+                      letterSpacing: "1px",
+                    }}
+                  >
+                    RWS
+                  </text>
+                </svg>
+                RWS ADMIN
+              </>
+            )}
+          </span>
         </div>
 
         <nav className="adm-nav">
-          {NAV.map((item) => {
+          {NAV.filter(
+            (item) => item.key !== "devtools" || role === "developer",
+          ).map((item) => {
             const isActive = activePage === item.key;
             return (
               <div key={item.key}>

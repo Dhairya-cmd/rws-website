@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import "./App.css";
 import logo from "./assets/logo.png";
 
@@ -163,20 +164,20 @@ function HomePage({ navigateTo }) {
   return (
     <div className="page home-page">
       <div className="home__hero-wrap" aria-hidden="true">
-  <video
-  className="home__hero-video"
-  autoPlay
-  muted
-  loop
-  playsInline
-  poster={heroImage}
->
-  <source src={heroVideo} type="video/mp4" />
-  <img className="home__hero-image" src={heroImage} alt="" />
-</video>
-  <div className="home__hero-overlay" />
-  <div className="home__hero-grain" />
-</div>
+        <video
+          className="home__hero-video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={heroImage}
+        >
+          <source src={heroVideo} type="video/mp4" />
+          <img className="home__hero-image" src={heroImage} alt="" />
+        </video>
+        <div className="home__hero-overlay" />
+        <div className="home__hero-grain" />
+      </div>
 
       <div className="home__content">
         <div className="home__eyebrow">
@@ -456,6 +457,57 @@ function WhyPage() {
   );
 }
 
+function ServiceDropdownPortal({
+  options,
+  anchorRef,
+  focusIdx,
+  selected,
+  onSelect,
+  onHover,
+}) {
+  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 0 });
+
+  React.useEffect(() => {
+    if (!anchorRef.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + window.scrollY + 8,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  }, [anchorRef]);
+
+  return ReactDOM.createPortal(
+    <div
+      className="custom-select__menu custom-select__menu--portal"
+      role="listbox"
+      style={{
+        position: "absolute",
+        top: pos.top,
+        left: pos.left,
+        width: pos.width,
+        zIndex: 99999,
+      }}
+    >
+      {options.map((opt, idx) => (
+        <button
+          key={opt}
+          type="button"
+          className={`custom-select__option ${selected === opt ? "active" : ""} ${focusIdx === idx ? "focused" : ""}`}
+          onMouseEnter={() => onHover(idx)}
+          onClick={() => onSelect(opt)}
+          role="option"
+          aria-selected={selected === opt}
+        >
+          <span>{opt}</span>
+          {selected === opt && <span className="custom-select__check">✓</span>}
+        </button>
+      ))}
+    </div>,
+    document.body,
+  );
+}
+
 function ContactPage() {
   const [form, setForm] = useState({
     name: "",
@@ -473,23 +525,23 @@ function ContactPage() {
   const serviceWrapRef = useRef(null);
 
   const [serviceOptions, setServiceOptions] = useState([
-  "Robotic MIG Welding",
-  "Manual TIG/MIG Welding",
-  "CNC Machining",
-  "Custom Fabrication",
-  "Fixture & Tooling",
-  "Sub-Assemblies",
-]);
+    "Robotic MIG Welding",
+    "Manual TIG/MIG Welding",
+    "CNC Machining",
+    "Custom Fabrication",
+    "Fixture & Tooling",
+    "Sub-Assemblies",
+  ]);
 
-useEffect(() => {
-  fetch("/api/admin/all-content")
-    .then((r) => r.json())
-    .then((d) => {
-      if (d.services && d.services.length > 0)
-        setServiceOptions(d.services.map((s) => s.title));
-    })
-    .catch(() => {});
-}, []);
+  useEffect(() => {
+    fetch("/api/admin/all-content")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.services && d.services.length > 0)
+          setServiceOptions(d.services.map((s) => s.title));
+      })
+      .catch(() => {});
+  }, []);
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -598,11 +650,32 @@ useEffect(() => {
                 ["📍", "483 Enfield Rd Unit 3, Burlington ON L7T 2X5"],
                 ["📞", "+1 (647) 922-0496"],
                 ["✉️", "sales@robotweldingservices.com"],
-                ["📐", "kash@robotweldingservices.com (Quotes)"],
+                ["📐", "kash@robotweldingservices.com"],
               ].map(([icon, val]) => (
                 <div key={val} className="contact__item">
                   <span>{icon}</span>
-                  <span>{val}</span>
+
+                  {icon === "📞" ? (
+                    <a href="tel:+16479220496" className="contact__link">
+                      {val}
+                    </a>
+                  ) : icon === "✉️" ? (
+                    <a
+                      href="mailto:sales@robotweldingservices.com"
+                      className="contact__link"
+                    >
+                      {val}
+                    </a>
+                  ) : icon === "📐" ? (
+                    <a
+                      href="mailto:kash@robotweldingservices.com"
+                      className="contact__link"
+                    >
+                      {val} (Quotes)
+                    </a>
+                  ) : (
+                    <span>{val}</span>
+                  )}
                 </div>
               ))}
             </div>
@@ -632,71 +705,56 @@ useEffect(() => {
               />
             </div>
 
-            <div className="form-row">
-              <div className="input-optional-wrap">
-                <input
-                  name="company"
-                  value={form.company}
-                  onChange={handle}
-                  placeholder="Company Name"
-                  disabled={loading}
-                />
-                <span className="input-optional-badge">Optional</span>
-              </div>
+            <div className="form-row" style={{ overflow: "visible" }}>
+  <div className="input-optional-wrap">
+    <input
+      name="company"
+      value={form.company}
+      onChange={handle}
+      placeholder="Company Name"
+      disabled={loading}
+    />
+    <span className="input-optional-badge">Optional</span>
+  </div>
 
-              <div className="custom-select" ref={serviceWrapRef}>
-                <button
-                  type="button"
-                  className={`custom-select__control ${serviceOpen ? "open" : ""} ${form.service ? "has-value" : ""}`}
-                  onClick={() => {
-                    if (!loading) {
-                      setServiceOpen((v) => !v);
-                      setServiceFocus(
-                        form.service ? serviceOptions.indexOf(form.service) : 0,
-                      );
-                    }
-                  }}
-                  disabled={loading}
-                  aria-haspopup="listbox"
-                  aria-expanded={serviceOpen}
-                >
-                  <span className="custom-select__value">{selectedLabel}</span>
-                  <span className="custom-select__chev">⌄</span>
-                </button>
+  <div className="custom-select" ref={serviceWrapRef} style={{ position: "relative", zIndex: serviceOpen ? 9999 : 1 }}>
+    <button
+      type="button"
+      className={`custom-select__control${serviceOpen ? " open" : ""}${form.service ? " has-value" : ""}`}
+      onClick={() => {
+        if (!loading) {
+          setServiceOpen((v) => !v);
+          setServiceFocus(form.service ? serviceOptions.indexOf(form.service) : 0);
+        }
+      }}
+      disabled={loading}
+      aria-haspopup="listbox"
+      aria-expanded={serviceOpen}
+    >
+      <span className="custom-select__value">{selectedLabel}</span>
+      <span className="custom-select__chev">⌄</span>
+    </button>
 
-                {serviceOpen && (
-                  <div className="custom-select__menu" role="listbox">
-                    {serviceOptions.map((opt, idx) => {
-                      const active = form.service === opt;
-                      const focused = serviceFocus === idx;
+    {serviceOpen && (
+      <ServiceDropdownPortal
+        options={serviceOptions}
+        anchorRef={serviceWrapRef}
+        focusIdx={serviceFocus}
+        selected={form.service}
+        onSelect={(opt) => {
+          setForm((prev) => ({ ...prev, service: opt }));
+          setServiceOpen(false);
+          setServiceFocus(-1);
+        }}
+        onHover={setServiceFocus}
+      />
+    )}
 
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          className={`custom-select__option ${active ? "active" : ""} ${focused ? "focused" : ""}`}
-                          onMouseEnter={() => setServiceFocus(idx)}
-                          onClick={() => {
-                            setForm((prev) => ({ ...prev, service: opt }));
-                            setServiceOpen(false);
-                            setServiceFocus(-1);
-                          }}
-                          role="option"
-                          aria-selected={active}
-                        >
-                          <span>{opt}</span>
-                          {active && (
-                            <span className="custom-select__check">✓</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <input type="hidden" name="service" value={form.service} />
-              </div>
-            </div>
+    <input type="hidden" name="service" value={form.service} />
+  </div>
+</div>
+            
+            
 
             <textarea
               name="message"
@@ -948,19 +1006,19 @@ function GalleryPage() {
               <img src={lb.mediaUrl} alt={lb.title || lb.category} />
             ) : (
               <video
-  src={lb.mediaUrl}
-  controls
-  autoPlay
-  playsInline
-  style={{
-    width:'100%',
-    minWidth:'min(1280px,90vw)',
-    maxWidth:'90vw',
-    maxHeight:'76vh',
-    borderRadius:'14px',
-    background:'#000'
-  }}
-/>
+                src={lb.mediaUrl}
+                controls
+                autoPlay
+                playsInline
+                style={{
+                  width: "100%",
+                  minWidth: "min(1280px,90vw)",
+                  maxWidth: "90vw",
+                  maxHeight: "76vh",
+                  borderRadius: "14px",
+                  background: "#000",
+                }}
+              />
             )}
             <div className="lightbox__info">
               <div className="lightbox__info-left">
@@ -996,6 +1054,7 @@ function Footer() {
             Delivered on time, every time.
           </p>
         </div>
+
         <div>
           <h4>Services</h4>
           {[
@@ -1009,25 +1068,57 @@ function Footer() {
             <p key={s}>{s}</p>
           ))}
         </div>
+
         <div>
           <h4>Location</h4>
           <p>
-            483 Enfield Rd Unit 3<br />
+            483 Enfield Rd Unit 3
+            <br />
             Burlington, ON L7T 2X5
           </p>
-          <p>+1 (647) 922-0496</p>
-          <p>sales@robotweldingservices.com</p>
+
+          <p>
+            <a href="tel:+16479220496" className="text-link">
+              +1 (647) 922-0496
+            </a>
+          </p>
+
+          <p>
+            <a
+              href="mailto:sales@robotweldingservices.com"
+              className="text-link"
+            >
+              sales@robotweldingservices.com
+            </a>
+          </p>
         </div>
+
         <div>
           <h4>Contact</h4>
+
           <p>
             <strong>Kashish Jani (Kash)</strong>
           </p>
+
           <p>President</p>
-          <p>+1-647-922-0496</p>
-          <p>kash@robotweldingservices.com</p>
+
+          <p>
+            <a href="tel:+16479220496" className="text-link">
+              +1 (647) 922-0496
+            </a>
+          </p>
+
+          <p>
+            <a
+              href="mailto:kash@robotweldingservices.com?subject=RFQ%20-%20Robot%20Welding%20Services"
+              className="text-link"
+            >
+              kash@robotweldingservices.com
+            </a>
+          </p>
         </div>
       </div>
+
       <div className="footer__bottom">
         <p>
           © {new Date().getFullYear()} Robot Welding Services Inc. All rights
@@ -1038,16 +1129,115 @@ function Footer() {
   );
 }
 
+function ShutdownScreen() {
+  const [msg, setMsg] = useState("This website is temporarily unavailable.");
+  useEffect(() => {
+    fetch("/api/admin/site-status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.message) setMsg(d.message);
+      });
+  }, []);
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "#050b12",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 99999,
+        padding: "2rem",
+        textAlign: "center",
+      }}
+    >
+      <svg
+        width="64"
+        height="64"
+        viewBox="0 0 64 64"
+        fill="none"
+        style={{ marginBottom: "1.5rem" }}
+      >
+        <circle
+          cx="32"
+          cy="32"
+          r="30"
+          stroke="rgba(200,16,46,.4)"
+          strokeWidth="2"
+        />
+        <path
+          d="M32 18v16M32 42v2"
+          stroke="#C8102E"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      </svg>
+      <h1
+        style={{
+          fontFamily: "Space Grotesk",
+          fontSize: "clamp(1.5rem,4vw,2.5rem)",
+          color: "#fff",
+          marginBottom: "1rem",
+          letterSpacing: "-1px",
+        }}
+      >
+        Site Unavailable
+      </h1>
+      <p
+        style={{
+          color: "rgba(248,250,252,.6)",
+          maxWidth: "440px",
+          lineHeight: 1.75,
+          fontSize: ".95rem",
+        }}
+      >
+        {msg}
+      </p>
+      <p
+        style={{
+          marginTop: "2rem",
+          fontSize: ".72rem",
+          color: "rgba(248,250,252,.25)",
+          letterSpacing: "2px",
+          textTransform: "uppercase",
+        }}
+      >
+        Robot Welding Services Inc.
+      </p>
+    </div>
+  );
+}
+
 export default function App() {
   const [currentPage, setCurrentPage] = useState("Home");
   const [showLogin, setShowLogin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(
     () => !!localStorage.getItem("adminToken"),
   );
+  const [siteDown, setSiteDown] = useState(false);
+  const [adminRole, setAdminRole] = useState("owner");
+
+  useEffect(() => {
+    if (isAdmin) return;
+    fetch("/api/admin/site-status")
+      .then((r) => r.json())
+      .then((d) => setSiteDown(d.isShutdown))
+      .catch(() => {});
+  }, [isAdmin]);
 
   useSecretCode("admin", () => {
-    if (localStorage.getItem("adminToken")) setIsAdmin(true);
-    else setShowLogin(true);
+    const token = localStorage.getItem("adminToken");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setAdminRole(payload.role || "owner");
+      } catch {}
+      setIsAdmin(true);
+    } else {
+      setShowLogin(true);
+    }
   });
 
   const navigateTo = (page) => {
@@ -1055,16 +1245,6 @@ export default function App() {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  if (isAdmin)
-    return (
-      <AdminDashboard
-        onLogout={() => {
-          localStorage.removeItem("adminToken");
-          setIsAdmin(false);
-        }}
-      />
-    );
 
   const renderPage = () => {
     switch (currentPage) {
@@ -1087,6 +1267,20 @@ export default function App() {
     }
   };
 
+  if (isAdmin)
+    return (
+      <AdminDashboard
+        role={adminRole}
+        onLogout={() => {
+          localStorage.removeItem("adminToken");
+          setIsAdmin(false);
+          setAdminRole("owner");
+        }}
+      />
+    );
+
+  if (siteDown) return <ShutdownScreen />;
+
   return (
     <div className="app-shell">
       <Navbar currentPage={currentPage} navigateTo={navigateTo} />
@@ -1098,9 +1292,10 @@ export default function App() {
       </main>
       {showLogin && (
         <AdminLogin
-          onLoginSuccess={() => {
+          onLoginSuccess={(role) => {
             setShowLogin(false);
             setIsAdmin(true);
+            setAdminRole(role || "owner");
           }}
           onClose={() => setShowLogin(false)}
         />
